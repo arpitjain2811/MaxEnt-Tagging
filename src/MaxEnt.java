@@ -1,8 +1,9 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
-
+import java.util.List;
 import opennlp.maxent.*;
 import opennlp.maxent.io.*;
 import opennlp.model.EventStream;
@@ -16,7 +17,7 @@ public class MaxEnt {
 	    try {
 			FileReader datafr = new FileReader(new File(dataFileName));
 	        EventStream es = new BasicEventStream(new PlainTextByLineDataStream(datafr));
-	        GISModel model = GIS.trainModel(es, 100, 4);
+	        GISModel model = GIS.trainModel(es, 1000, 1);
 	        File outputFile = new File(modelFileName);
 	        GISModelWriter writer = new SuffixSensitiveGISModelWriter(model, outputFile);
 	        writer.persist();
@@ -32,8 +33,6 @@ public class MaxEnt {
 	    BufferedReader buf = new BufferedReader(new FileReader(testFileName));
 	    
 	    String line;
-	    String word;
-	    String pos;
 	    String tag;
 
 	    String B = "B";
@@ -49,11 +48,12 @@ public class MaxEnt {
 	    correct.put(I, (float) 0);
 	    correct.put(O, (float) 0);
 	    
-	    
 	    total.put(B, (float) 0);
 	    total.put(I, (float) 0);
 	    total.put(O, (float) 0);
 	    
+	    List<String> correct_tags = new ArrayList<String>();
+	    List<String> predicted_tags = new ArrayList<String>();
 	    
 	    String format = "%-25s%-5s%-5s%n";
 	    while ((line = buf.readLine()) != null)
@@ -62,9 +62,8 @@ public class MaxEnt {
 	    	String[] parts = line.trim().split(" ");
 	    	if (parts.length > 1) {
 	    		
-	    		word = parts[0];
-	    		pos = parts[1];
 	    		tag = parts[parts.length-1];
+	    		
 	    		String[] feature = new String[2];
 	    		for (int i = 0; i < parts.length-1; i++)
 	    		{	
@@ -72,18 +71,22 @@ public class MaxEnt {
 				}
 	    		
 	    		String predicted  = m.getBestOutcome(m.eval(feature));
-	    		
 	    		total.put(tag, total.get(tag)+1);
-	    		
 	    		if (tag.equals(predicted)) {
 					
 	    			correct.put(predicted, correct.get(predicted)+1);
 				}
-	    		
-	    		//System.out.printf(format,word,tag,predicted);
+	    		correct_tags.add(tag);
+	    		predicted_tags.add(predicted);
 			}
 	    	
 	    }
+	    buf.close();
+	    
+	    
+	    /*
+	     * Tag Accuracies
+	     */
 	    
 	    format = "%-5s%-10s%-10s%-10s%n";
 	    System.out.printf(format, "Tag","Correct","Total","Accuracy");
@@ -94,11 +97,103 @@ public class MaxEnt {
 	    System.out.printf(format, O,correct.get(O),total.get(O),(correct.get(O)/total.get(O))*100);
 
 	    
+	    /* Precision = # of matching tags / # of tags in response
+	     * Recall = # of matching tags / # of tags in key
+	     */
+	    
+	    List<String> ng_correct = getTags(correct_tags);
+	    List<String> ng_predicted = getTags(predicted_tags);
+	    
+	    float num_tag_key = ng_correct.size();
+	    float num_tag_response = ng_predicted.size();
+	    float num_matching_tag = 0;
+	    
+	    for (int j = 0; j < ng_correct.size(); j++) {
+	    	if (ng_predicted.get(j).equals(ng_correct.get(j))) {
+				num_matching_tag++;
+			}
+		}
+	    format = "%-25s%-5.1f%n";
+	    System.out.printf(format,"#of matching tags",num_matching_tag);
+	    System.out.printf(format,"#of tags in response",num_tag_response);
+	    System.out.printf(format,"#of tags in key",num_tag_key);
+	    
+	    float Precision = (num_matching_tag/num_tag_response);
+	    float Recall = (num_matching_tag/num_tag_key);
+	    float Fscore = 1/((1/Precision)+ (1/Recall));
+	    format = "%-14s%-10.6f%n";
+	    System.out.printf(format,"Precision:",Precision);
+	    System.out.printf(format,"Recall:",Recall);
+	    System.out.printf(format,"Fscore:",Fscore);
+	    
+	    
+	    
 	    }
 	    catch (Exception e)
 	    {
 	    	System.out.println("Exception" + e.toString());
 	    }
 	    
+	}
+
+	private static List<String> getTags(List<String> tag_seq) {
+		
+		List<String> tags = new ArrayList<String>();
+		
+		int start = 0;
+		int last = 0;
+		
+		for (int i = 0; i < tag_seq.size(); i++) {
+			
+			if (tag_seq.get(i).equals("B"))
+			{
+				 if (i==0) {
+					start = i;
+					last = start;
+					continue;
+					
+					
+				}
+				
+				 tags.add(start+" "+last);
+				 
+				/*
+				 * write prev tag 
+				 * update start and end
+				 */
+				
+				
+				
+				start = i;
+				last = start;
+			}
+			
+			if (tag_seq.get(i).equals("I"))
+			{
+				if (i==0) {
+					start=i;
+					last = i;
+					continue;
+				}
+				
+				if (tag_seq.get(i-1).equals("B") || tag_seq.get(i-1).equals("I"))
+				{
+					last++;
+				}
+				if (tag_seq.get(i-1).equals("O")) {
+					
+					tags.add(start+" "+last);
+					start = i;
+					last = start;
+				}
+			}
+			
+			
+			
+			
+		}
+		
+		
+		return tags;
 	}
 }
