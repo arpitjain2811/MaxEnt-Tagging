@@ -15,12 +15,10 @@ public class MaxEnt {
 	String testFileName = "data/test.txt";
 	try {
 	    FileReader datafr = new FileReader(new File(dataFileName));
-	    EventStream es = new BasicEventStream(
-		    new PlainTextByLineDataStream(datafr));
+	    EventStream es = new BasicEventStream(new PlainTextByLineDataStream(datafr));
 	    GISModel model = GIS.trainModel(es, 1000, 1);
 	    File outputFile = new File(modelFileName);
-	    GISModelWriter writer = new SuffixSensitiveGISModelWriter(model,
-		    outputFile);
+	    GISModelWriter writer = new SuffixSensitiveGISModelWriter(model, outputFile);
 	    writer.persist();
 	} catch (Exception e) {
 	    System.out.print("Unable to create model due to exception: ");
@@ -28,10 +26,8 @@ public class MaxEnt {
 	}
 	try {
 
-	    GISModel m = (GISModel) new SuffixSensitiveGISModelReader(new File(
-		    modelFileName)).getModel();
-	    BufferedReader buf = new BufferedReader(
-		    new FileReader(testFileName));
+	    GISModel m = (GISModel) new SuffixSensitiveGISModelReader(new File(modelFileName)).getModel();
+	    BufferedReader buf = new BufferedReader(new FileReader(testFileName));
 
 	    String line;
 	    String tag;
@@ -91,12 +87,9 @@ public class MaxEnt {
 	    System.out.printf(format, "Tag", "Correct", "Total", "Accuracy");
 
 	    format = "%-5s%-10.2f%-10.2f%-4.2f%%%n";
-	    System.out.printf(format, B, correct.get(B), total.get(B),
-		    (correct.get(B) / total.get(B)) * 100);
-	    System.out.printf(format, I, correct.get(I), total.get(I),
-		    (correct.get(I) / total.get(I)) * 100);
-	    System.out.printf(format, O, correct.get(O), total.get(O),
-		    (correct.get(O) / total.get(O)) * 100);
+	    System.out.printf(format, B, correct.get(B), total.get(B), (correct.get(B) / total.get(B)) * 100);
+	    System.out.printf(format, I, correct.get(I), total.get(I), (correct.get(I) / total.get(I)) * 100);
+	    System.out.printf(format, O, correct.get(O), total.get(O), (correct.get(O) / total.get(O)) * 100);
 	    System.out.println();
 
 	    /*
@@ -144,7 +137,6 @@ public class MaxEnt {
 	int last = 0;
 
 	for (int i = 0; i < tag_seq.size(); i++) {
-
 	    if (tag_seq.get(i).equals("B")) {
 		if (i == 0) {
 		    start = i;
@@ -164,12 +156,10 @@ public class MaxEnt {
 		    continue;
 		}
 
-		if (tag_seq.get(i - 1).equals("B")
-			|| tag_seq.get(i - 1).equals("I")) {
+		if (tag_seq.get(i - 1).equals("B") || tag_seq.get(i - 1).equals("I")) {
 		    last++;
 		}
 		if (tag_seq.get(i - 1).equals("O")) {
-
 		    tags.add(start + " " + last);
 		    start = i;
 		    last = start;
