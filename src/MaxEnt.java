@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.HashMap;
 
 import opennlp.maxent.*;
 import opennlp.maxent.io.*;
@@ -29,14 +30,31 @@ public class MaxEnt {
 	    	
 	    GISModel m = (GISModel) new SuffixSensitiveGISModelReader(new File(modelFileName)).getModel();
 	    BufferedReader buf = new BufferedReader(new FileReader(testFileName));
+	    
 	    String line;
 	    String word;
 	    String pos;
 	    String tag;
+
+	    String B = "B";
+	    String I = "I";
+	    String O = "O";
+	    
 	    String[] feature_name = {"word","pos"};
 	    
-	    float correct = 0;
-	    float total = 0;
+	    HashMap<String, Float> correct = new HashMap<String,Float>();
+	    HashMap<String, Float> total = new HashMap<String,Float>();
+
+	    correct.put(B, (float) 0);
+	    correct.put(I, (float) 0);
+	    correct.put(O, (float) 0);
+	    
+	    
+	    total.put(B, (float) 0);
+	    total.put(I, (float) 0);
+	    total.put(O, (float) 0);
+	    
+	    
 	    String format = "%-25s%-5s%-5s%n";
 	    while ((line = buf.readLine()) != null)
 	    {
@@ -44,33 +62,37 @@ public class MaxEnt {
 	    	String[] parts = line.trim().split(" ");
 	    	if (parts.length > 1) {
 	    		
-	    		total++;
-	    		
 	    		word = parts[0];
 	    		pos = parts[1];
-	    		tag = parts[2];
-	    		
+	    		tag = parts[parts.length-1];
 	    		String[] feature = new String[2];
 	    		for (int i = 0; i < parts.length-1; i++)
 	    		{	
 	    			feature[i] = feature_name[i]+"="+parts[i];
 				}
-	      		
-	    		//System.out.println(tag);
-	    		String predicted  = m.getBestOutcome(m.eval(feature));
-	    		System.out.printf(format,word,tag,predicted);
 	    		
-	    		if(tag.equals(predicted))
-	    		{
-	    			correct++;
-	    		}
+	    		String predicted  = m.getBestOutcome(m.eval(feature));
+	    		
+	    		total.put(tag, total.get(tag)+1);
+	    		
+	    		if (tag.equals(predicted)) {
+					
+	    			correct.put(predicted, correct.get(predicted)+1);
+				}
+	    		
+	    		//System.out.printf(format,word,tag,predicted);
 			}
 	    	
 	    }
 	    
-	    System.out.println("Correct: " + correct);
-	    System.out.println("Total: " + total);
-	    System.out.println("Accuracy: " + (correct/total)*100 +" %");
+	    format = "%-5s%-10s%-10s%-10s%n";
+	    System.out.printf(format, "Tag","Correct","Total","Accuracy");
+	    
+	    format = "%-5s%-10.2f%-10.2f%-4.2f%%%n";
+	    System.out.printf(format, B,correct.get(B),total.get(B),(correct.get(B)/total.get(B))*100);
+	    System.out.printf(format, I,correct.get(I),total.get(I),(correct.get(I)/total.get(I))*100);
+	    System.out.printf(format, O,correct.get(O),total.get(O),(correct.get(O)/total.get(O))*100);
+
 	    
 	    }
 	    catch (Exception e)
