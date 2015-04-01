@@ -26,3 +26,5 @@ features/.idea/.name
 *.iml
 
 features/train_features.txt
+
+*.txt
