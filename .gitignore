@@ -18,3 +18,9 @@ hs_err_pid*
 *.ipynb
 
 model
+
+*.xml
+
+features/.idea/.name
+
+*.iml

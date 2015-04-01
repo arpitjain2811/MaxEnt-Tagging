@@ -3,7 +3,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import opennlp.maxent.*;
 import opennlp.maxent.io.*;
 import opennlp.model.EventStream;
@@ -16,7 +19,7 @@ public class MaxEnt {
 	try {
 	    FileReader datafr = new FileReader(new File(dataFileName));
 	    EventStream es = new BasicEventStream(new PlainTextByLineDataStream(datafr));
-	    GISModel model = GIS.trainModel(es, 1000, 1);
+	    GISModel model = GIS.trainModel(es, 100, 2);
 	    File outputFile = new File(modelFileName);
 	    GISModelWriter writer = new SuffixSensitiveGISModelWriter(model, outputFile);
 	    writer.persist();
@@ -97,19 +100,18 @@ public class MaxEnt {
 	     * of matching tags / # of tags in key
 	     */
 
-	    List<String> ng_correct = getTags(correct_tags);
-	    List<String> ng_predicted = getTags(predicted_tags);
+	    HashSet<String> ng_correct = getTags(correct_tags);
+	    HashSet<String> ng_predicted = getTags(predicted_tags);
 
 	    float num_tag_key = ng_correct.size();
 	    float num_tag_response = ng_predicted.size();
 	    float num_matching_tag = 0;
 
-	    for (int j = 0; j < ng_correct.size(); j++) {
-		if (ng_predicted.get(j).equals(ng_correct.get(j))) {
-		    num_matching_tag++;
+	    HashSet<String> intersection = new HashSet<String>(ng_correct);
+	    intersection.retainAll(ng_predicted);
 
-		}
-	    }
+	    num_matching_tag = intersection.size();
+
 	    format = "%-25s%-5.1f%n";
 	    System.out.printf(format, "#of matching tags", num_matching_tag);
 	    System.out.printf(format, "#of tags in response", num_tag_response);
@@ -117,7 +119,7 @@ public class MaxEnt {
 	    System.out.println();
 	    float Precision = (num_matching_tag / num_tag_response);
 	    float Recall = (num_matching_tag / num_tag_key);
-	    float Fscore = 1 / ((1 / Precision) + (1 / Recall));
+	    float Fscore = (2 * (Precision * Recall)) / (Precision + Recall);
 	    format = "%-14s%-10.6f%n";
 	    System.out.printf(format, "Precision:", Precision);
 	    System.out.printf(format, "Recall:", Recall);
@@ -129,9 +131,9 @@ public class MaxEnt {
 
     }
 
-    private static List<String> getTags(List<String> tag_seq) {
+    private static HashSet<String> getTags(List<String> tag_seq) {
 
-	List<String> tags = new ArrayList<String>();
+	HashSet<String> tags = new HashSet<String>();
 
 	int start = 0;
 	int last = 0;
