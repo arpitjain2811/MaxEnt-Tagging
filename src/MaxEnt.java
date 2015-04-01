@@ -19,7 +19,7 @@ public class MaxEnt {
 	try {
 	    FileReader datafr = new FileReader(new File(dataFileName));
 	    EventStream es = new BasicEventStream(new PlainTextByLineDataStream(datafr));
-	    GISModel model = GIS.trainModel(es, 100, 2);
+	    GISModel model = GIS.trainModel(es, 100, 4);
 	    File outputFile = new File(modelFileName);
 	    GISModelWriter writer = new SuffixSensitiveGISModelWriter(model, outputFile);
 	    writer.persist();
@@ -27,27 +27,24 @@ public class MaxEnt {
 	    System.out.print("Unable to create model due to exception: ");
 	    System.out.println(e);
 	}
+	System.out.println("Done training...");
+	System.out.println();
+	System.out.println("Starting testing...");
+
 	try {
 
 	    GISModel m = (GISModel) new SuffixSensitiveGISModelReader(new File(modelFileName)).getModel();
 	    BufferedReader buf = new BufferedReader(new FileReader(testFileName));
 
-	    String line;
-	    String tag;
-
 	    String B = "B";
 	    String I = "I";
 	    String O = "O";
 
-	    String[] feature_name = { "word", "pos" };
-
 	    HashMap<String, Float> correct = new HashMap<String, Float>();
 	    HashMap<String, Float> total = new HashMap<String, Float>();
-
 	    correct.put(B, (float) 0);
 	    correct.put(I, (float) 0);
 	    correct.put(O, (float) 0);
-
 	    total.put(B, (float) 0);
 	    total.put(I, (float) 0);
 	    total.put(O, (float) 0);
@@ -55,44 +52,104 @@ public class MaxEnt {
 	    List<String> correct_tags = new ArrayList<String>();
 	    List<String> predicted_tags = new ArrayList<String>();
 
-	    String format = "%-25s%-5s%-5s%n";
+	    String line;
+	    String word;
+	    String pos;
+	    String tag;
+	    List<String> words = new ArrayList<String>();
+	    List<String> poss = new ArrayList<String>();
+	    List<String> tags = new ArrayList<String>();
+
+	    System.out.println("Reading test file...");
 	    while ((line = buf.readLine()) != null) {
 
 		String[] parts = line.trim().split(" ");
 		if (parts.length > 1) {
 
+		    word = parts[0];
+		    pos = parts[1];
 		    tag = parts[parts.length - 1];
 
-		    String[] feature = new String[2];
-		    for (int i = 0; i < parts.length - 1; i++) {
-			feature[i] = feature_name[i] + "=" + parts[i];
-		    }
-
-		    String predicted = m.getBestOutcome(m.eval(feature));
-		    total.put(tag, total.get(tag) + 1);
-		    if (tag.equals(predicted)) {
-
-			correct.put(predicted, correct.get(predicted) + 1);
-		    }
-		    correct_tags.add(tag);
-		    predicted_tags.add(predicted);
+		    words.add(word);
+		    poss.add(pos);
+		    tags.add(tag);
 		}
 
 	    }
 	    buf.close();
 
+	    String current_word;
+	    String current_pos;
+	    String default_word = "";
+	    String default_pos = "";
+
+	    String predicted;
+	    
+	    int window_size = 2;
+	    int idx;
+
+	    System.out.println("Creating features and predicting...");
+	    for (int i = 0; i < words.size(); i++) {
+
+		List<String> feature = new ArrayList<String>();
+		current_word = words.get(i);
+		current_pos = poss.get(i);
+		tag = tags.get(i);
+
+		idx = window_size;
+		for (int j = i - window_size; j < i; j++) {
+
+		    if (j < 0) {
+			feature.add("prev" + idx + "word" + "=" + default_word);
+			feature.add("prev" + idx + "pos" + "=" + default_pos);
+
+		    } else {
+			feature.add("prev" + idx + "word" + "=" + words.get(j));
+			feature.add("prev" + idx + "pos" + "=" + poss.get(j));
+		    }
+		    idx--;
+		}
+
+		feature.add("currentword=" + current_word);
+		feature.add("currentpos=" + current_pos);
+
+		predicted = m.getBestOutcome(m.eval(feature.toArray(new String[feature.size()])));
+
+		// Tag accuracies calculation
+		total.put(tag, total.get(tag) + 1);
+		if (tag.equals(predicted)) {
+
+		    correct.put(predicted, correct.get(predicted) + 1);
+		}
+
+		// Precision Recall Fscore calculation
+		correct_tags.add(tag);
+		predicted_tags.add(predicted);
+
+	    }
+
+	    System.out.println();
+	    System.out.println("Results-");
+
 	    /*
 	     * Tag Accuracies
 	     */
 
-	    format = "%-5s%-10s%-10s%-10s%n";
 	    System.out.println();
+	    System.out.println("Per tag accuracies:");
+
+	    String format = "%-5s%-10s%-10s%-10s%n";
 	    System.out.printf(format, "Tag", "Correct", "Total", "Accuracy");
 
 	    format = "%-5s%-10.2f%-10.2f%-4.2f%%%n";
 	    System.out.printf(format, B, correct.get(B), total.get(B), (correct.get(B) / total.get(B)) * 100);
 	    System.out.printf(format, I, correct.get(I), total.get(I), (correct.get(I) / total.get(I)) * 100);
 	    System.out.printf(format, O, correct.get(O), total.get(O), (correct.get(O) / total.get(O)) * 100);
+	    System.out.println();
+
+	    System.out
+		    .printf("Overall Tag accuracy: %.2f%%%n",(((correct.get(B) + correct.get(I) + correct.get(O)) / (total.get(B)
+				    + total.get(I) + total.get(O))) * 100));
 	    System.out.println();
 
 	    /*
@@ -113,9 +170,9 @@ public class MaxEnt {
 	    num_matching_tag = intersection.size();
 
 	    format = "%-25s%-5.1f%n";
-	    System.out.printf(format, "#of matching tags", num_matching_tag);
-	    System.out.printf(format, "#of tags in response", num_tag_response);
-	    System.out.printf(format, "#of tags in key", num_tag_key);
+	    System.out.printf(format, "#of matching tags:", num_matching_tag);
+	    System.out.printf(format, "#of tags in response:", num_tag_response);
+	    System.out.printf(format, "#of tags in key:", num_tag_key);
 	    System.out.println();
 	    float Precision = (num_matching_tag / num_tag_response);
 	    float Recall = (num_matching_tag / num_tag_key);
