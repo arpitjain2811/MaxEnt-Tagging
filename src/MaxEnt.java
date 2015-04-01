@@ -5,11 +5,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
 import opennlp.maxent.*;
 import opennlp.maxent.io.*;
 import opennlp.model.EventStream;
+import org.apache.commons.lang3.StringUtils;
 
 public class MaxEnt {
     public static void main(String[] args) {
@@ -82,11 +81,14 @@ public class MaxEnt {
 	    String current_pos;
 	    String default_word = "";
 	    String default_pos = "";
+	    String default_tag = "";
 
 	    String predicted;
-	    
-	    int window_size = 2;
-	    int idx;
+
+	    int back_window_size = 1;
+	    int forward_window_size = 1;
+	    int idx_back;
+	    int idx_forward;
 
 	    System.out.println("Creating features and predicting...");
 	    for (int i = 0; i < words.size(); i++) {
@@ -96,22 +98,45 @@ public class MaxEnt {
 		current_pos = poss.get(i);
 		tag = tags.get(i);
 
-		idx = window_size;
-		for (int j = i - window_size; j < i; j++) {
+		idx_back = back_window_size;
+		for (int j = i - back_window_size; j < i; j++) {
 
 		    if (j < 0) {
-			feature.add("prev" + idx + "word" + "=" + default_word);
-			feature.add("prev" + idx + "pos" + "=" + default_pos);
+			feature.add("prev" + idx_back + "word" + "=" + default_word);
+			feature.add("prev" + idx_back + "pos" + "=" + default_pos);
+			feature.add("prev" + idx_back + "tag" + "=" + default_tag);
 
 		    } else {
-			feature.add("prev" + idx + "word" + "=" + words.get(j));
-			feature.add("prev" + idx + "pos" + "=" + poss.get(j));
+			feature.add("prev" + idx_back + "word" + "=" + words.get(j));
+			feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
+			feature.add("prev" + idx_back + "tag" + "=" + tags.get(j));
 		    }
-		    idx--;
+		    idx_back--;
 		}
 
 		feature.add("currentword=" + current_word);
 		feature.add("currentpos=" + current_pos);
+
+		feature.add("forcesmall=" + current_word.toLowerCase());
+		feature.add("isalpha=" + ((StringUtils.isAlpha(current_word)) ? 1 : 0));
+		feature.add("isdigit=" + ((StringUtils.isNumeric(current_word)) ? 1 : 0));
+		feature.add("islower=" + ((StringUtils.isAllLowerCase(current_word)) ? 1 : 0));
+		feature.add("istitle=" + ((isTitle(current_word)) ? 1 : 0));
+		feature.add("isupper=" + ((StringUtils.isAllUpperCase(current_word)) ? 1 : 0));
+
+		idx_forward = 1;
+		for (int j = i + forward_window_size; j < i + 1 + forward_window_size; j++) {
+
+		    if (j >= words.size()) {
+			feature.add("next" + idx_forward + "word" + "=" + default_word);
+			feature.add("next" + idx_forward + "pos" + "=" + default_pos);
+
+		    } else {
+			feature.add("next" + idx_forward + "word" + "=" + words.get(j));
+			feature.add("next" + idx_forward + "pos" + "=" + poss.get(j));
+		    }
+		    idx_forward++;
+		}
 
 		predicted = m.getBestOutcome(m.eval(feature.toArray(new String[feature.size()])));
 
@@ -148,7 +173,8 @@ public class MaxEnt {
 	    System.out.println();
 
 	    System.out
-		    .printf("Overall Tag accuracy: %.2f%%%n",(((correct.get(B) + correct.get(I) + correct.get(O)) / (total.get(B)
+		    .printf("Overall Tag accuracy: %.2f%%%n",
+			    (((correct.get(B) + correct.get(I) + correct.get(O)) / (total.get(B)
 				    + total.get(I) + total.get(O))) * 100));
 	    System.out.println();
 
@@ -186,6 +212,11 @@ public class MaxEnt {
 	    System.out.println("Exception" + e.toString());
 	}
 
+    }
+
+    private static boolean isTitle(String current_word) {
+	return Character.isUpperCase(current_word.charAt(0))
+		&& StringUtils.isAllLowerCase(current_word.substring(1));
     }
 
     private static HashSet<String> getTags(List<String> tag_seq) {
