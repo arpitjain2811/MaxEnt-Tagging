@@ -1,3 +1,8 @@
+back_window_size = 1
+forward_window_size = 1
+boolean_features = True
+prev_tag = False
+
 train_file = open("../data/training.txt","r")
 train_features_file = open("train_features.txt","w")
 words = [];
@@ -11,9 +16,6 @@ for line in train_file:
         poss.append(pos)
         tags.append(tag)
 train_file.close()
-back_window_size = 1
-forward_window_size = 1
-
 default_word = ""
 default_pos = ""
 default_shape = None
@@ -35,18 +37,27 @@ for i in range(0,len(words)):
     idx_back = back_window_size
     for j in range(i-back_window_size,i):
         if j < 0:
-            feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" " + "prev" + str(idx_back) + "tag" + "=" + default_pos+" "
-        else:
-            feature = feature + "prev" + str(idx_back) + "word" + "=" + words[j] + " " + "prev" + str(idx_back) + "pos" + "=" + poss[j] + " " + "prev" + str(idx_back) + "tag" + "=" + tags[j]+ " "
-        idx_back = idx_back - 1
+            if prev_tag:
+                feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" " + "prev" + str(idx_back) + "tag" + "=" + default_pos+" "
+            else:
+                feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" "        
 
+        else:
+            if prev_tag:
+                feature = feature + "prev" + str(idx_back) + "word" + "=" + words[j] + " " + "prev" + str(idx_back) + "pos" + "=" + poss[j] + " " + "prev" + str(idx_back) + "tag" + "=" + tags[j]+ " "
+            else:
+                feature = feature + "prev" + str(idx_back) + "word" + "=" + words[j] + " " + "prev" + str(idx_back) + "pos" + "=" + poss[j] + " "
+        idx_back = idx_back - 1
+    
     feature = feature + "currentword=" + current_word + " " + "currentpos=" + current_pos + " "
-    feature = feature + "forcesmall=" + current_word.lower() + " "
-    feature = feature + "isalpha=" + str(int(str.isalpha(current_word))) + " "
-    feature = feature + "isdigit=" + str(int(str.isdigit(current_word))) + " "
-    feature = feature + "islower=" + str(int(str.islower(current_word))) + " "
-    feature = feature + "istitle=" + str(int(str.istitle(current_word))) + " "
-    feature = feature + "isupper=" + str(int(str.isupper(current_word))) + " "
+    feature = feature + "forcesmall=" + current_word.lower() + " "    
+    
+    if boolean_features:    
+        feature = feature + "isalpha=" + str(int(str.isalpha(current_word))) + " "
+        feature = feature + "isdigit=" + str(int(str.isdigit(current_word))) + " "
+        feature = feature + "islower=" + str(int(str.islower(current_word))) + " "
+        feature = feature + "istitle=" + str(int(str.istitle(current_word))) + " "
+        feature = feature + "isupper=" + str(int(str.isupper(current_word))) + " "
 
     idx_forward = 1
     for j in range(i+1,i+1+forward_window_size):

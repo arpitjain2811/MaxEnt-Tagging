@@ -15,10 +15,11 @@ public class MaxEnt {
 	String modelFileName = "model";
 	String dataFileName = "features/train_features.txt";
 	String testFileName = "data/test.txt";
+	String predicted_crf = "features/crf_predictions.txt";
 	try {
 	    FileReader datafr = new FileReader(new File(dataFileName));
 	    EventStream es = new BasicEventStream(new PlainTextByLineDataStream(datafr));
-	    GISModel model = GIS.trainModel(es, 100, 4);
+	    GISModel model = GIS.trainModel(es, 150, 4);
 	    File outputFile = new File(modelFileName);
 	    GISModelWriter writer = new SuffixSensitiveGISModelWriter(model, outputFile);
 	    writer.persist();
@@ -87,6 +88,9 @@ public class MaxEnt {
 
 	    int back_window_size = 1;
 	    int forward_window_size = 1;
+	    boolean boolean_features = true;
+	    boolean prev_tag = false;
+
 	    int idx_back;
 	    int idx_forward;
 
@@ -102,27 +106,39 @@ public class MaxEnt {
 		for (int j = i - back_window_size; j < i; j++) {
 
 		    if (j < 0) {
-			feature.add("prev" + idx_back + "word" + "=" + default_word);
-			feature.add("prev" + idx_back + "pos" + "=" + default_pos);
-			feature.add("prev" + idx_back + "tag" + "=" + default_tag);
+			if (prev_tag) {
+			    feature.add("prev" + idx_back + "word" + "=" + default_word);
+			    feature.add("prev" + idx_back + "pos" + "=" + default_pos);
+			    feature.add("prev" + idx_back + "tag" + "=" + default_tag);
+			} else {
+			    feature.add("prev" + idx_back + "word" + "=" + default_word);
+			    feature.add("prev" + idx_back + "pos" + "=" + default_pos);
+			}
 
 		    } else {
-			feature.add("prev" + idx_back + "word" + "=" + words.get(j));
-			feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
-			feature.add("prev" + idx_back + "tag" + "=" + tags.get(j));
+			if (prev_tag) {
+			    feature.add("prev" + idx_back + "word" + "=" + words.get(j));
+			    feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
+			    feature.add("prev" + idx_back + "tag" + "=" + predicted_tags.get(j));
+			} else {
+			    feature.add("prev" + idx_back + "word" + "=" + words.get(j));
+			    feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
+
+			}
 		    }
 		    idx_back--;
 		}
 
 		feature.add("currentword=" + current_word);
 		feature.add("currentpos=" + current_pos);
-
 		feature.add("forcesmall=" + current_word.toLowerCase());
-		feature.add("isalpha=" + ((StringUtils.isAlpha(current_word)) ? 1 : 0));
-		feature.add("isdigit=" + ((StringUtils.isNumeric(current_word)) ? 1 : 0));
-		feature.add("islower=" + ((StringUtils.isAllLowerCase(current_word)) ? 1 : 0));
-		feature.add("istitle=" + ((isTitle(current_word)) ? 1 : 0));
-		feature.add("isupper=" + ((StringUtils.isAllUpperCase(current_word)) ? 1 : 0));
+		if (boolean_features) {
+		    feature.add("isalpha=" + ((StringUtils.isAlpha(current_word)) ? 1 : 0));
+		    feature.add("isdigit=" + ((StringUtils.isNumeric(current_word)) ? 1 : 0));
+		    feature.add("islower=" + ((StringUtils.isAllLowerCase(current_word)) ? 1 : 0));
+		    feature.add("istitle=" + ((isTitle(current_word)) ? 1 : 0));
+		    feature.add("isupper=" + ((StringUtils.isAllUpperCase(current_word)) ? 1 : 0));
+		}
 
 		idx_forward = 1;
 		for (int j = i + forward_window_size; j < i + 1 + forward_window_size; j++) {
@@ -179,8 +195,8 @@ public class MaxEnt {
 	    System.out.println();
 
 	    /*
-	     * Precision = # of matching tags / # of tags in response Recall = #
-	     * of matching tags / # of tags in key
+	     * Precision = # of matching tags / # of tags in response Recall =
+	     * #of matching tags / # of tags in key
 	     */
 
 	    HashSet<String> ng_correct = getTags(correct_tags);
@@ -207,6 +223,58 @@ public class MaxEnt {
 	    System.out.printf(format, "Precision:", Precision);
 	    System.out.printf(format, "Recall:", Recall);
 	    System.out.printf(format, "Fscore:", Fscore);
+
+	    /*
+	     * CRF Precision Recall Fscore
+	     */
+
+	    System.out.println();
+	    System.out.println("CRF Results-");
+	    System.out.println();
+	    List<String> predicted_tag_crf = new ArrayList<String>();
+
+	    buf = new BufferedReader(new FileReader(predicted_crf));
+	    while ((line = buf.readLine()) != null) {
+		predicted_tag_crf.add(line.trim());
+	    }
+
+	    HashSet<String> ng_predicted_crf = getTags(predicted_tag_crf);
+	    ng_correct = getTags(correct_tags);
+
+	    HashSet<String> intersection_crf = new HashSet<String>(ng_correct);
+	    intersection_crf.retainAll(ng_predicted_crf);
+
+	    float num_matching_tag_crf = intersection_crf.size();
+	    float num_tags_respose_crf = ng_predicted_crf.size();
+
+	    format = "%-25s%-5.1f%n";
+	    System.out.printf(format, "#of matching tags:", num_matching_tag_crf);
+	    System.out.printf(format, "#of tags in response:", num_tags_respose_crf);
+	    System.out.printf(format, "#of tags in key:", num_tag_key);
+	    System.out.println();
+	    Precision = (num_matching_tag_crf / num_tags_respose_crf);
+	    Recall = (num_matching_tag_crf / num_tag_key);
+	    Fscore = (2 * (Precision * Recall)) / (Precision + Recall);
+	    format = "%-14s%-10.6f%n";
+	    System.out.printf(format, "Precision:", Precision);
+	    System.out.printf(format, "Recall:", Recall);
+	    System.out.printf(format, "Fscore:", Fscore);
+
+	    /*
+	     * CRF Tag Accuracies
+	     */
+
+	    System.out.println();
+	    float correct_crf = 0;
+	    for (int j = 0; j < correct_tags.size(); j++) {
+		if (correct_tags.get(j).equals(predicted_tag_crf.get(j))) {
+		    correct_crf++;
+		}
+
+	    }
+
+	    System.out.printf("Overall Tag accuracy: %.2f%%%n",
+		    (((correct_crf) / (correct_tags.size())) * 100));
 
 	} catch (Exception e) {
 	    System.out.println("Exception" + e.toString());

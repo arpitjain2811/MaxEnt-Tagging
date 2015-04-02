@@ -28,3 +28,4 @@ features/.idea/.name
 features/train_features.txt
 
 *.txt
+features/nouncrf
