@@ -1,6 +1,6 @@
 back_window_size = 1
-forward_window_size = 1
-boolean_features = False
+forward_window_size = 0
+boolean_features = True
 train_file = open("../data/training.txt","r")
 train_features_file = open("train_features_crf.txt","w")
 words = [];
@@ -19,6 +19,7 @@ train_file.close()
 default_word = "."
 default_pos = "."
 default_shape = None
+default_upper = 2
 
 prev_pos_features = []
 next_pos_features = []
@@ -39,8 +40,16 @@ for i in range(0,len(words)):
         if j < 0:
             #feature = feature + default_word + " " + default_pos+" " +  default_pos+" "
             feature = feature + default_word + " " + default_pos+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
         else:
             feature = feature +  words[j] + " " + poss[j] + " "
+            feature = feature + str(int(str.isupper(words[j])))+" "
+            feature = feature + str(int(str.istitle(words[j])))+" "
+            feature = feature + str(int(str.islower(words[j])))+" "
+            feature = feature + str(int(str.isdigit(words[j])))+" "
             #feature = feature +  words[j] + " " + poss[j] + " " + tags[j]+ " "
         idx_back = idx_back - 1
 

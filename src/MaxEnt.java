@@ -83,6 +83,7 @@ public class MaxEnt {
 	    String default_word = "";
 	    String default_pos = "";
 	    String default_tag = "";
+	    int default_upper = 2;
 
 	    String predicted;
 
@@ -110,9 +111,19 @@ public class MaxEnt {
 			    feature.add("prev" + idx_back + "word" + "=" + default_word);
 			    feature.add("prev" + idx_back + "pos" + "=" + default_pos);
 			    feature.add("prev" + idx_back + "tag" + "=" + default_tag);
+			    feature.add("prev" + idx_back + "isUpper" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "istitle" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "islower" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "isdigit" + "=" + default_upper);
+			    //feature.add("prev" + idx_back + "isalpha" + "=" + default_upper);
 			} else {
 			    feature.add("prev" + idx_back + "word" + "=" + default_word);
 			    feature.add("prev" + idx_back + "pos" + "=" + default_pos);
+			    feature.add("prev" + idx_back + "isUpper" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "istitle" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "islower" + "=" + default_upper);
+			    feature.add("prev" + idx_back + "isdigit" + "=" + default_upper);
+			    //feature.add("prev" + idx_back + "isalpha" + "=" + default_upper);
 			}
 
 		    } else {
@@ -120,9 +131,30 @@ public class MaxEnt {
 			    feature.add("prev" + idx_back + "word" + "=" + words.get(j));
 			    feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
 			    feature.add("prev" + idx_back + "tag" + "=" + predicted_tags.get(j));
+			    feature.add("prev" + idx_back + "isUpper" + "="
+				    + ((StringUtils.isAllUpperCase(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "istitle" + "="
+				    + ((isTitle(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "islower" + "="
+				    + ((StringUtils.isAllLowerCase(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "isdigit" + "="
+				    + ((StringUtils.isNumeric(words.get(j))) ? 1 : 0));
+			    //feature.add("prev" + idx_back + "isalpha" + "="
+				//    + ((StringUtils.isAlpha(words.get(j))) ? 1 : 0));
+
 			} else {
 			    feature.add("prev" + idx_back + "word" + "=" + words.get(j));
 			    feature.add("prev" + idx_back + "pos" + "=" + poss.get(j));
+			    feature.add("prev" + idx_back + "isUpper" + "="
+				    + ((StringUtils.isAllUpperCase(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "istitle" + "="
+				    + ((isTitle(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "islower" + "="
+				    + ((StringUtils.isAllLowerCase(words.get(j))) ? 1 : 0));
+			    feature.add("prev" + idx_back + "isdigit" + "="
+				    + ((StringUtils.isNumeric(words.get(j))) ? 1 : 0));
+			    //feature.add("prev" + idx_back + "isalpha" + "="
+				//    + ((StringUtils.isAlpha(words.get(j))) ? 1 : 0));
 
 			}
 		    }

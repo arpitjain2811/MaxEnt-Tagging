@@ -19,6 +19,7 @@ train_file.close()
 default_word = ""
 default_pos = ""
 default_shape = None
+default_upper = 2
 
 prev_pos_features = []
 next_pos_features = []
@@ -39,14 +40,34 @@ for i in range(0,len(words)):
         if j < 0:
             if prev_tag:
                 feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" " + "prev" + str(idx_back) + "tag" + "=" + default_pos+" "
+                feature = feature + "prev" + str(idx_back) + "isUpper" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "istitle" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "islower" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "isdigit" + "=" + str(default_upper)+" "
+                #feature = feature + "prev" + str(idx_back) + "isalpha" + "=" + str(default_upper)+" "
             else:
-                feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" "        
-
+                feature = feature + "prev" + str(idx_back) + "word" + "=" + default_word + " " + "prev" + str(idx_back) + "pos" + "=" + default_pos+" "       
+                feature = feature + "prev" + str(idx_back) + "isUpper" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "istitle" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "islower" + "=" + str(default_upper)+" "
+                feature = feature + "prev" + str(idx_back) + "isdigit" + "=" + str(default_upper)+" "
+                #feature = feature + "prev" + str(idx_back) + "isalpha" + "=" + str(default_upper)+" "
         else:
             if prev_tag:
                 feature = feature + "prev" + str(idx_back) + "word" + "=" + words[j] + " " + "prev" + str(idx_back) + "pos" + "=" + poss[j] + " " + "prev" + str(idx_back) + "tag" + "=" + tags[j]+ " "
+                feature = feature + "prev" + str(idx_back) + "isUpper" + "=" + str(int(str.isupper(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "istitle" + "=" + str(int(str.istitle(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "islower" + "=" + str(int(str.islower(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "isdigit" + "=" + str(int(str.isdigit(words[j])))+" "
+                #feature = feature + "prev" + str(idx_back) + "isalpha" + "=" + str(int(str.isalpha(words[j])))+" "
             else:
                 feature = feature + "prev" + str(idx_back) + "word" + "=" + words[j] + " " + "prev" + str(idx_back) + "pos" + "=" + poss[j] + " "
+                feature = feature + "prev" + str(idx_back) + "isUpper" + "=" + str(int(str.isupper(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "istitle" + "=" + str(int(str.istitle(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "islower" + "=" + str(int(str.islower(words[j])))+" "
+                feature = feature + "prev" + str(idx_back) + "isdigit" + "=" + str(int(str.isdigit(words[j])))+" "
+                #feature = feature + "prev" + str(idx_back) + "isalpha" + "=" + str(int(str.isalpha(words[j])))+" "
+
         idx_back = idx_back - 1
     
     feature = feature + "currentword=" + current_word + " " + "currentpos=" + current_pos + " "

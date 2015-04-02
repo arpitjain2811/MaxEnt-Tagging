@@ -1,6 +1,6 @@
 back_window_size = 1
-forward_window_size = 1
-boolean_features = False
+forward_window_size = 0
+boolean_features = True
 test_file = open("../data/test.txt","r")
 test_features_file = open("test_features_crf.txt","w")
 words = [];
@@ -18,6 +18,7 @@ test_file.close()
 default_word = "."
 default_pos = "."
 default_shape = None
+default_upper = 2
 
 prev_pos_features = []
 next_pos_features = []
@@ -37,9 +38,17 @@ for i in range(0,len(words)):
     for j in range(i-back_window_size,i):
         if j < 0:
             feature = feature + default_word + " " + default_pos+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
+            feature = feature + str(default_upper)+" "
             #feature = feature + default_word + " " + default_pos+" " +  default_pos+" "
         else:
             feature = feature +  words[j] + " " + poss[j] + " "
+            feature = feature + str(int(str.isupper(words[j])))+" "
+            feature = feature + str(int(str.istitle(words[j])))+" "
+            feature = feature + str(int(str.islower(words[j])))+" "
+            feature = feature + str(int(str.isdigit(words[j])))+" "
             #feature = feature +  words[j] + " " + poss[j] + " " + tags[j]+ " "
         idx_back = idx_back - 1
     if boolean_features:        
